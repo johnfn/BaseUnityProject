@@ -1,14 +1,37 @@
 ﻿using System;
 using UnityEngine;
-using System.Collections;
+using System.Collections.Generic;
 using JetBrains.Annotations;
 
-public class PlayerModel : BaseModel
+public class CollisionModel
 {
-    
+    public bool TouchingTop;
+
+    public bool TouchingBottom;
+
+    public bool TouchingRight;
+
+    public bool TouchingLeft;
+
+    public List<GameObject> TouchedObjects;
+
+    public CollisionModel()
+    {
+        Clear();
+    }
+
+    public void Clear()
+    {
+        TouchingTop = false;
+        TouchingBottom = false;
+        TouchingRight = false;
+        TouchingLeft = false;
+
+        TouchedObjects = new List<GameObject>();
+    }
 }
 
-public class PlayerController : BaseBehavior<PlayerModel>
+public class PlayerController : MonoBehaviour
 {
     private BoxCollider2D _collider;
 
@@ -20,7 +43,7 @@ public class PlayerController : BaseBehavior<PlayerModel>
 
     public LayerMask WallMask;
 
-    private bool OnGround = false;
+    public CollisionModel Collisions;
 
     private Vector3 _velocity;
 
@@ -32,8 +55,9 @@ public class PlayerController : BaseBehavior<PlayerModel>
         _transform = GetComponent<Transform>();
         _stats = GetComponent<ControllableStats>();
 
-        Model = new PlayerModel();
         _velocity = Vector3.zero;
+
+        Collisions = new CollisionModel();
     }
 
     float HorizontalForce()
@@ -44,15 +68,9 @@ public class PlayerController : BaseBehavior<PlayerModel>
         return 0.0f;
     }
 
-	void Start() 
-    {
-	}
-
     [UsedImplicitly]
-	new void Update()
+	void Update()
 	{
-	    base.Update();
-
         ApplyFriction(ref _velocity);
         UpdateVelocity(ref _velocity);
         CapVelocity(ref _velocity);
@@ -92,12 +110,12 @@ public class PlayerController : BaseBehavior<PlayerModel>
 
         velocity.y -= _stats.Gravity * Time.deltaTime;
 
-        if (OnGround && Input.GetKey(KeyCode.Space))
+        if (Collisions.TouchingBottom && Input.GetKey(KeyCode.Space))
         {
             velocity.y = _stats.JumpHeight / 60;
         }
 
-        if (!OnGround && !Input.GetKey(KeyCode.Space) && velocity.y > 0)
+        if (!Collisions.TouchingBottom && !Input.GetKey(KeyCode.Space) && velocity.y > 0)
         {
             velocity.y = 0;
         }
@@ -109,9 +127,11 @@ public class PlayerController : BaseBehavior<PlayerModel>
         const int numRays = 8;
         const float skinWidth = .01f;
 
+        Collisions.Clear();
+
         if (Math.Abs(velocity.y) > .0001f)
         {
-            OnGround = false;
+            Collisions.TouchingBottom = false;
 
             var firstRayOrigin = transform.position + new Vector3(-Width / 2, Math.Sign(velocity.y) * Height / 2, 0.0f);
             var rayDirection = Vector2.up * -Math.Sign(velocity.y);
@@ -126,15 +146,14 @@ public class PlayerController : BaseBehavior<PlayerModel>
 
                 if (!raycastHit) continue;
 
-                // To get the thing you're touching: raycastHit.collider.gameObject
-
-                OnGround = OnGround || (velocity.y < 0);
+                Collisions.TouchingBottom = Collisions.TouchingBottom || (velocity.y < 0);
 
                 var newVelocity = raycastHit.point.y - rayOrigin.y;
 
                 if (Math.Abs(newVelocity) < Math.Abs(velocity.y))
                 {
                     velocity.y = newVelocity;
+                    Collisions.TouchedObjects.Add(raycastHit.collider.gameObject);
                 }
             }
         }
@@ -161,13 +180,9 @@ public class PlayerController : BaseBehavior<PlayerModel>
                 if (Math.Abs(newVelocity) < Math.Abs(velocity.x))
                 {
                     velocity.x = newVelocity;
+                    Collisions.TouchedObjects.Add(raycastHit.collider.gameObject);
                 }
             }
         }
-    }
-
-    protected override void DirtyUpdate()
-    {
-
     }
 }
