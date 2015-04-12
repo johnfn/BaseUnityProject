@@ -22,14 +22,20 @@ public class PlayerController : BaseBehavior<PlayerModel>
 
     private Vector3 BottomRayOrigin, LeftRayOrigin, RightRayOrigin;
 
+    private bool OnGround = false;
+
+    private Vector3 _velocity;
+
+    private ControllableStats _stats;
+
     void Awake()
     {
         _collider = GetComponent<BoxCollider2D>();
         _transform = GetComponent<Transform>();
+        _stats = GetComponent<ControllableStats>();
 
         Model = new PlayerModel();
-
-        CalculateRayOrigins();
+        _velocity = Vector3.zero;
     }
 
     void CalculateRayOrigins()
@@ -37,6 +43,14 @@ public class PlayerController : BaseBehavior<PlayerModel>
         BottomRayOrigin = transform.position + new Vector3(0.0f, -Height / 2, 0.0f);
         LeftRayOrigin = transform.position + new Vector3(-Width / 2, 0.0f, 0.0f);
         RightRayOrigin = transform.position + new Vector3(Width / 2, 0.0f, 0.0f);
+    }
+
+    float HorizontalForce()
+    {
+        if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow)) return -1.0f;
+        if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow)) return 1.0f;
+
+        return 0.0f;
     }
 
 	void Start() 
@@ -48,44 +62,78 @@ public class PlayerController : BaseBehavior<PlayerModel>
 	{
 	    base.Update();
 
-        var movement = new Vector3(Input.GetAxis("Horizontal") * 10, -1, 0) * Time.deltaTime;
-
         CalculateRayOrigins();
-        CheckForCollisions(movement);
+
+        UpdateVelocity(ref _velocity);
+        ApplyFriction(ref _velocity);
+        CheckForCollisions(ref _velocity);
+
+        _transform.Translate(_velocity);
 	}
 
-    void CheckForCollisions(Vector3 movement)
+    void ApplyFriction(ref Vector3 velocity)
+    {
+        if (Math.Abs(velocity.x) < _stats.Friction)
+        {
+            velocity.x = 0;
+        }
+        else
+        {
+            velocity.x -= Math.Sign(velocity.x) * _stats.Friction;
+        }
+    }
+
+    void UpdateVelocity(ref Vector3 velocity)
+    {
+        velocity.x += HorizontalForce() * _stats.HorizontalSpeed * Time.deltaTime;
+
+        velocity.y -= _stats.Gravity * Time.deltaTime;
+
+        if (OnGround && Math.Abs(Input.GetAxis("Jump")) > .001f)
+        {
+            velocity.y = Input.GetAxis("Jump") * _stats.JumpHeight / 60;
+        }
+
+        print(velocity.y);
+    }
+
+    void CheckForCollisions(ref Vector3 velocity)
     {
         // Check for vertical collisions
 
-        if (Math.Abs(movement.y) > .0001f)
+        if (Math.Abs(velocity.y) > .0001f)
         {
-            var rayOrigin = transform.position + new Vector3(0.0f, -Height/2, 0.0f);
-            // Debug.DrawRay(rayOrigin, (Vector2.up * -1), Color.red);
+            var rayOrigin = transform.position + new Vector3(0.0f, -Height/2, 0.0f) * -Math.Sign(velocity.y);
 
-            var raycastHit = Physics2D.Raycast(rayOrigin, Vector2.up, movement.y, WallMask);
+            var raycastHit = Physics2D.Raycast(rayOrigin, Vector2.up, velocity.y, WallMask);
             if (raycastHit)
             {
-                movement.y = raycastHit.point.y - rayOrigin.y;
+                OnGround = velocity.y < 0;
+                velocity.y = raycastHit.point.y - rayOrigin.y;
             }
+            else
+            {
+                OnGround = false;
+            }
+
         }
 
         // Check for horizontal collisions
 
-        if (Math.Abs(movement.x) > .0001f)
+        if (Math.Abs(velocity.x) > .0001f)
         {
-            var rayOrigin = movement.x > 0 ? RightRayOrigin : LeftRayOrigin;
-            var rayDirection = Vector2.right;
-            Debug.DrawRay(rayOrigin, rayDirection * 1000, Color.red);
+            var dx = Math.Abs(velocity.x);
+            var rayOrigin = velocity.x > 0 ? RightRayOrigin : LeftRayOrigin;
+            var rayDirection = Vector2.right * Math.Sign(velocity.x);
 
-            var raycastHit = Physics2D.Raycast(rayOrigin, rayDirection, movement.x, WallMask);
+            Debug.DrawRay(rayOrigin, rayDirection * dx * 10, Color.red);
+
+            var raycastHit = Physics2D.Raycast(rayOrigin, rayDirection, dx, WallMask);
             if (raycastHit)
             {
-                movement.x = raycastHit.point.x - rayOrigin.x;
+                velocity.x = raycastHit.point.x - rayOrigin.x;
             }
         }
-
-        _transform.Translate(movement);
     }
 
     protected override void DirtyUpdate()
