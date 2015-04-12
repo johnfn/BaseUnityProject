@@ -111,21 +111,20 @@ public class PlayerController : BaseBehavior<PlayerModel>
             {
                 var xOffset = i * (Width - skinWidth * 2) / (numRays - 1) + skinWidth;
                 var rayOrigin = firstRayOrigin + new Vector3(xOffset, 0.0f, 0.0f);
-                // TODO: Figure out actual direction, not just always down.
-                var raycastHit = Physics2D.Raycast(rayOrigin, -Vector2.up, velocity.y, WallMask);
+                var rayDirection = Vector2.up * Math.Sign(velocity.y);
+                var raycastHit = Physics2D.Raycast(rayOrigin, rayDirection, velocity.y, WallMask);
 
-                Debug.DrawRay(rayOrigin, -Vector2.up, Color.red);
+                Debug.DrawRay(rayOrigin, rayDirection, Color.red);
 
                 if (!raycastHit) continue;
 
                 OnGround = OnGround || (velocity.y < 0);
 
-                var newPosition = raycastHit.point.y - rayOrigin.y;
+                var newVelocity = raycastHit.point.y - rayOrigin.y;
 
-                // TODO: The > sign.
-                if (newPosition > velocity.y)
+                if (Math.Abs(newVelocity) < Math.Abs(velocity.y))
                 {
-                    velocity.y = newPosition;
+                    velocity.y = newVelocity;
                 }
             }
         }
