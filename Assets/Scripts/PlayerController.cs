@@ -99,16 +99,18 @@ public class PlayerController : BaseBehavior<PlayerModel>
     {
         // Check for vertical collisions
         const int numRays = 8;
+        const float skinWidth = .01f;
 
         if (Math.Abs(velocity.y) > .0001f)
         {
             OnGround = false;
 
-            var firstRayOrigin = transform.position + new Vector3(-Width / 2, -Height / 2, 0.0f) * -Math.Sign(velocity.y);
+            var firstRayOrigin = transform.position + new Vector3(-Width / 2, Math.Sign(velocity.y) * Height / 2, 0.0f);
 
             for (var i = 0; i < numRays; i++)
             {
-                var rayOrigin = firstRayOrigin + new Vector3(i * Width / (numRays - 1), 0.0f, 0.0f);
+                var xOffset = i * (Width - skinWidth * 2) / (numRays - 1) + skinWidth;
+                var rayOrigin = firstRayOrigin + new Vector3(xOffset, 0.0f, 0.0f);
                 // TODO: Figure out actual direction, not just always down.
                 var raycastHit = Physics2D.Raycast(rayOrigin, -Vector2.up, velocity.y, WallMask);
 
@@ -120,6 +122,7 @@ public class PlayerController : BaseBehavior<PlayerModel>
 
                 var newPosition = raycastHit.point.y - rayOrigin.y;
 
+                // TODO: The > sign.
                 if (newPosition > velocity.y)
                 {
                     velocity.y = newPosition;
