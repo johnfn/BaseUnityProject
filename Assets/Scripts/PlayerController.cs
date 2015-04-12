@@ -92,9 +92,14 @@ public class PlayerController : BaseBehavior<PlayerModel>
 
         velocity.y -= _stats.Gravity * Time.deltaTime;
 
-        if (OnGround && Math.Abs(Input.GetAxis("Jump")) > .001f)
+        if (OnGround && Input.GetKey(KeyCode.Space))
         {
-            velocity.y = Input.GetAxis("Jump") * _stats.JumpHeight / 60;
+            velocity.y = _stats.JumpHeight / 60;
+        }
+
+        if (!OnGround && !Input.GetKey(KeyCode.Space) && velocity.y > 0)
+        {
+            velocity.y = 0;
         }
     }
 
