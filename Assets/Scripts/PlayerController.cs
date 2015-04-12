@@ -93,29 +93,38 @@ public class PlayerController : BaseBehavior<PlayerModel>
         {
             velocity.y = Input.GetAxis("Jump") * _stats.JumpHeight / 60;
         }
-
-        print(velocity.y);
     }
 
     void CheckForCollisions(ref Vector3 velocity)
     {
         // Check for vertical collisions
+        const int numRays = 8;
 
         if (Math.Abs(velocity.y) > .0001f)
         {
-            var rayOrigin = transform.position + new Vector3(0.0f, -Height/2, 0.0f) * -Math.Sign(velocity.y);
+            OnGround = false;
 
-            var raycastHit = Physics2D.Raycast(rayOrigin, Vector2.up, velocity.y, WallMask);
-            if (raycastHit)
-            {
-                OnGround = velocity.y < 0;
-                velocity.y = raycastHit.point.y - rayOrigin.y;
-            }
-            else
-            {
-                OnGround = false;
-            }
+            var firstRayOrigin = transform.position + new Vector3(-Width / 2, -Height / 2, 0.0f) * -Math.Sign(velocity.y);
 
+            for (var i = 0; i < numRays; i++)
+            {
+                var rayOrigin = firstRayOrigin + new Vector3(i * Width / (numRays - 1), 0.0f, 0.0f);
+                // TODO: Figure out actual direction, not just always down.
+                var raycastHit = Physics2D.Raycast(rayOrigin, -Vector2.up, velocity.y, WallMask);
+
+                Debug.DrawRay(rayOrigin, -Vector2.up, Color.red);
+
+                if (!raycastHit) continue;
+
+                OnGround = OnGround || (velocity.y < 0);
+
+                var newPosition = raycastHit.point.y - rayOrigin.y;
+
+                if (newPosition > velocity.y)
+                {
+                    velocity.y = newPosition;
+                }
+            }
         }
 
         // Check for horizontal collisions
