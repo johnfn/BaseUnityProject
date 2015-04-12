@@ -53,11 +53,16 @@ public class PlayerController : BaseBehavior<PlayerModel>
 	{
 	    base.Update();
 
-        UpdateVelocity(ref _velocity);
         ApplyFriction(ref _velocity);
+        UpdateVelocity(ref _velocity);
         CheckForCollisions(ref _velocity);
 
         _transform.Translate(_velocity);
+
+        if (_transform.localScale != Vector3.one)
+        {
+            Debug.LogError("localScale needs to be 1/1/1 or else collision is sad.");
+        }
 	}
 
     void ApplyFriction(ref Vector3 velocity)
@@ -95,7 +100,7 @@ public class PlayerController : BaseBehavior<PlayerModel>
             OnGround = false;
 
             var firstRayOrigin = transform.position + new Vector3(-Width / 2, Math.Sign(velocity.y) * Height / 2, 0.0f);
-            var rayDirection = Vector2.up * Math.Sign(velocity.y);
+            var rayDirection = Vector2.up * -Math.Sign(velocity.y);
 
             for (var i = 0; i < numRays; i++)
             {
@@ -103,9 +108,11 @@ public class PlayerController : BaseBehavior<PlayerModel>
                 var rayOrigin = firstRayOrigin + new Vector3(xOffset, 0.0f, 0.0f);
                 var raycastHit = Physics2D.Raycast(rayOrigin, rayDirection, velocity.y, WallMask);
 
-                Debug.DrawRay(rayOrigin, rayDirection, Color.red);
+                Debug.DrawRay(rayOrigin, rayDirection * velocity.y, Color.red);
 
                 if (!raycastHit) continue;
+
+                // To get the thing you're touching: raycastHit.collider.gameObject
 
                 OnGround = OnGround || (velocity.y < 0);
 
