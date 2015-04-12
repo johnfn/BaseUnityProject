@@ -20,8 +20,6 @@ public class PlayerController : BaseBehavior<PlayerModel>
 
     public LayerMask WallMask;
 
-    private Vector3 BottomRayOrigin, LeftRayOrigin, RightRayOrigin;
-
     private bool OnGround = false;
 
     private Vector3 _velocity;
@@ -36,13 +34,6 @@ public class PlayerController : BaseBehavior<PlayerModel>
 
         Model = new PlayerModel();
         _velocity = Vector3.zero;
-    }
-
-    void CalculateRayOrigins()
-    {
-        BottomRayOrigin = transform.position + new Vector3(0.0f, -Height / 2, 0.0f);
-        LeftRayOrigin = transform.position + new Vector3(-Width / 2, 0.0f, 0.0f);
-        RightRayOrigin = transform.position + new Vector3(Width / 2, 0.0f, 0.0f);
     }
 
     float HorizontalForce()
@@ -61,8 +52,6 @@ public class PlayerController : BaseBehavior<PlayerModel>
 	new void Update()
 	{
 	    base.Update();
-
-        CalculateRayOrigins();
 
         UpdateVelocity(ref _velocity);
         ApplyFriction(ref _velocity);
@@ -106,12 +95,12 @@ public class PlayerController : BaseBehavior<PlayerModel>
             OnGround = false;
 
             var firstRayOrigin = transform.position + new Vector3(-Width / 2, Math.Sign(velocity.y) * Height / 2, 0.0f);
+            var rayDirection = Vector2.up * Math.Sign(velocity.y);
 
             for (var i = 0; i < numRays; i++)
             {
                 var xOffset = i * (Width - skinWidth * 2) / (numRays - 1) + skinWidth;
                 var rayOrigin = firstRayOrigin + new Vector3(xOffset, 0.0f, 0.0f);
-                var rayDirection = Vector2.up * Math.Sign(velocity.y);
                 var raycastHit = Physics2D.Raycast(rayOrigin, rayDirection, velocity.y, WallMask);
 
                 Debug.DrawRay(rayOrigin, rayDirection, Color.red);
@@ -133,16 +122,25 @@ public class PlayerController : BaseBehavior<PlayerModel>
 
         if (Math.Abs(velocity.x) > .0001f)
         {
-            var dx = Math.Abs(velocity.x);
-            var rayOrigin = velocity.x > 0 ? RightRayOrigin : LeftRayOrigin;
+            var firstRayOrigin = transform.position + new Vector3(Math.Sign(velocity.x) * Width / 2, -Height / 2, 0.0f);
             var rayDirection = Vector2.right * Math.Sign(velocity.x);
 
-            Debug.DrawRay(rayOrigin, rayDirection * dx * 10, Color.red);
-
-            var raycastHit = Physics2D.Raycast(rayOrigin, rayDirection, dx, WallMask);
-            if (raycastHit)
+            for (var i = 0; i < numRays; i++)
             {
-                velocity.x = raycastHit.point.x - rayOrigin.x;
+                var yOffset = i * (Height - skinWidth * 2) / (numRays - 1) + skinWidth;
+                var rayOrigin = firstRayOrigin + new Vector3(0.0f, yOffset, 0.0f);
+                var raycastHit = Physics2D.Raycast(rayOrigin, rayDirection, Math.Abs(velocity.x), WallMask);
+
+                Debug.DrawRay(rayOrigin, rayDirection * Math.Abs(velocity.x) * 20, Color.red);
+
+                if (!raycastHit) continue;
+
+                var newVelocity = raycastHit.point.x - rayOrigin.x;
+
+                if (Math.Abs(newVelocity) < Math.Abs(velocity.x))
+                {
+                    velocity.x = newVelocity;
+                }
             }
         }
     }
