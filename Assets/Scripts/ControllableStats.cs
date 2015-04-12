@@ -10,4 +10,6 @@ public class ControllableStats : MonoBehaviour
     public float JumpHeight;
 
     public float Friction;
+
+    public float MaxHorizontalSpeed;
 }

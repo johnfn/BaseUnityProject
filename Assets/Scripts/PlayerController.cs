@@ -55,6 +55,7 @@ public class PlayerController : BaseBehavior<PlayerModel>
 
         ApplyFriction(ref _velocity);
         UpdateVelocity(ref _velocity);
+        CapVelocity(ref _velocity);
         CheckForCollisions(ref _velocity);
 
         _transform.Translate(_velocity);
@@ -74,6 +75,14 @@ public class PlayerController : BaseBehavior<PlayerModel>
         else
         {
             velocity.x -= Math.Sign(velocity.x) * _stats.Friction;
+        }
+    }
+
+    void CapVelocity(ref Vector3 velocity)
+    {
+        if (Math.Abs(velocity.x) > _stats.MaxHorizontalSpeed)
+        {
+            velocity.x = Math.Sign(velocity.x) * _stats.MaxHorizontalSpeed;
         }
     }
 
