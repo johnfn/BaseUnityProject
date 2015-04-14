@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.0" orientation="orthogonal" renderorder="right-down" width="100" height="100" tilewidth="32" tileheight="32" nextobjectid="1">
+<map version="1.0" orientation="orthogonal" renderorder="right-down" width="100" height="100" tilewidth="32" tileheight="32" nextobjectid="10">
  <tileset firstgid="1" name="tiles" tilewidth="32" tileheight="32">
   <image source="../Textures/tiles.png" width="64" height="64"/>
   <tile id="0">
@@ -7,10 +7,19 @@
     <object id="0" x="0" y="0" width="32" height="32"/>
    </objectgroup>
   </tile>
+  <tile id="3">
+   <properties>
+    <property name="PrefabName" value="Block"/>
+   </properties>
+  </tile>
  </tileset>
  <layer name="Tile Layer 1" width="100" height="100">
   <data encoding="base64" compression="zlib">
    eJzt1kEKgCAQQNHs/oduWzCmQY0TvAduooX0GbNtVNJWb4ALPWrRo56oyfnZflp8rwWrR5N8d030yNVr4cxaxz++ltF5ZVbyzcyIHrlGTcxJvid3YfLpUUtvVqI50i5X1CN6p9dFv3c9+ZYz86MLAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMD/HGmaAFw=
   </data>
  </layer>
+ <objectgroup name="Boxes">
+  <object id="6" gid="4" x="320" y="384"/>
+  <object id="7" gid="4" x="576" y="448"/>
+ </objectgroup>
 </map>
