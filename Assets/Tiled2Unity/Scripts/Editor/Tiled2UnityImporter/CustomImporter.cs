@@ -20,9 +20,14 @@ class CustomImporterAddComponent : Tiled2Unity.ICustomTiledImporter
             var spawnInstance = (GameObject)Object.Instantiate(spawn);
             spawnInstance.name = spawn.name;
 
+            var renderer = spawnInstance.GetComponent<SpriteRenderer>();
+            var size = renderer.bounds.size;
+
             // Use the position of the game object we're attached to
             spawnInstance.transform.parent = gameObject.transform;
             spawnInstance.transform.localPosition = Vector3.zero;
+
+            spawnInstance.transform.localPosition += new Vector3(size.x / 2, size.y / 2, 0.0f);
 
             // gameObject.AddComponent(props["AddComp"]);
         }
