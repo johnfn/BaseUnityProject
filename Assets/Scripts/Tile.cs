@@ -57,6 +57,8 @@ public class Tile: BaseBehavior<TileModel> {
 
     override protected void DirtyUpdate()
     {
+        return;
+
         if (Model.TileType == Type.Normal)
         {
             renderer.color = Color.white;
