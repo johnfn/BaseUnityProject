@@ -108,24 +108,18 @@ public class PhysicsController2D : MonoBehaviour
 
         foreach (var c in thingsOnTop)
         {
-            c.Object.GetComponent<PhysicsController2D>().AddHorizontalForce(force);
+            var physics = c.Object.GetComponent<PhysicsController2D>();
+
+            if (physics)
+            {
+                physics.AddHorizontalForce(force);
+            }
         }
     }
 
     public void AddVerticalForce(float force)
     {
         _velocity.y += force;
-
-        // TODO: Or, things on left. 
-
-        /*
-        var thingsOnRight = Collisions.PreviouslyTouchedObjects.Where(c => c.Side == CollisionSide.Right);
-
-        foreach (var c in thingsOnRight)
-        {
-            c.Object.GetComponent<PhysicsController2D>().AddHorizontalForce(force);
-        }
-        */
     }
 
     public void SetVerticalForce(float force)
@@ -147,8 +141,6 @@ public class PhysicsController2D : MonoBehaviour
         CapVelocity(ref _velocity);
 
         CheckForCollisions(ref _velocity);
-
-        _transform.Translate(_velocity);
 
         if (_transform.localScale != Vector3.one)
         {
@@ -236,6 +228,11 @@ public class PhysicsController2D : MonoBehaviour
             }
         }
 
+        // We need to separate x and y translation rather than do them both at the same time afterwards so
+        // we check (x, 0) and (x, y) rather than (x, 0) and (0, y) (which would allow us to go diagonally into walls). 
+
+        _transform.Translate(new Vector3(0, velocity.y, 0));
+
         // Check for horizontal collisions
 
         if (Math.Abs(velocity.x) > .0001f)
@@ -249,7 +246,7 @@ public class PhysicsController2D : MonoBehaviour
                 var rayOrigin = firstRayOrigin + new Vector3(0.0f, yOffset, 0.0f);
                 var raycastHits = Physics2D.RaycastAll(rayOrigin, rayDirection, Math.Abs(velocity.x), WallMask);
 
-                Debug.DrawRay(rayOrigin, rayDirection * Math.Abs(velocity.x) * 20, Color.blue);
+                Debug.DrawRay(rayOrigin + velocity, rayDirection * Math.Abs(velocity.x) * 20, Color.blue);
 
                 foreach (var hit in raycastHits)
                 {
@@ -273,5 +270,7 @@ public class PhysicsController2D : MonoBehaviour
                 }
             }
         }
+
+        _transform.Translate(new Vector3(velocity.x, 0, 0));
     }
 }
