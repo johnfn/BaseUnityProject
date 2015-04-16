@@ -118,14 +118,13 @@ public class PhysicsController2D : MonoBehaviour
 
         // TODO: Or, things on left. 
 
-        /*
         var thingsOnRight = Collisions.PreviouslyTouchedObjects.Where(c => c.Side == CollisionSide.Right);
 
         foreach (var c in thingsOnRight)
         {
+            print(c);
             c.Object.GetComponent<PhysicsController2D>().AddHorizontalForce(force);
         }
-        */
     }
 
     public void SetVerticalForce(float force)
@@ -137,19 +136,24 @@ public class PhysicsController2D : MonoBehaviour
     void Update()
     {
         Collisions.Reset();
+
+        ApplyGravity(ref _velocity);
+        ApplyFriction(ref _velocity);
+        CapVelocity(ref _velocity);
+
+        CheckForErrors();
     }
 
     [UsedImplicitly]
 	void LateUpdate()
     {
-        ApplyGravity(ref _velocity);
-        ApplyFriction(ref _velocity);
-        CapVelocity(ref _velocity);
-
-        CheckForCollisions(ref _velocity);
+        ResolveCollisions();
 
         _transform.Translate(_velocity);
+    }
 
+    void CheckForErrors()
+    {
         if (_transform.localScale != Vector3.one)
         {
             Debug.LogError("localScale needs to be 1/1/1 or else collision is sad.");
@@ -181,27 +185,41 @@ public class PhysicsController2D : MonoBehaviour
         }
     }
 
-    void CheckForCollisions(ref Vector3 velocity)
+    void ResolveCollisions()
     {
-        // Check for vertical collisions
+        if (Collisions.Resolved) return;
+
         const int numRays = 8;
         const float skinWidth = .01f;
+
+        var butFirst = Collisions.PreviouslyTouchedObjects.Where(c => c.Side == CollisionSide.Right).ToList();
+        foreach (var b in butFirst)
+        {
+            b.Object.GetComponent<PhysicsController2D>().ResolveCollisions();
+        }
+
+        if (gameObject.name == "RightBlock")
+        {
+            print(Collisions.PreviouslyTouchedObjects.Count());
+        }
         
+        // Check for vertical collisions
+
         // Note: We shoot out the rays about epsilon away from our actual edge for a complicated
         // reason I don't want to get into right now. 
 
-        if (Math.Abs(velocity.y) > .0001f)
+        if (Math.Abs(_velocity.y) > .0001f)
         {
-            var firstRayOrigin = transform.position + new Vector3(-Width / 2, Math.Sign(velocity.y) * Height / 2, 0.0f);
-            var rayDirection = Vector2.up * -Math.Sign(velocity.y);
+            var firstRayOrigin = transform.position + new Vector3(-Width / 2, Math.Sign(_velocity.y) * Height / 2, 0.0f);
+            var rayDirection = Vector2.up * -Math.Sign(_velocity.y);
 
             for (var i = 0; i < numRays; i++)
             {
                 var xOffset = i * (Width - skinWidth * 2) / (numRays - 1) + skinWidth;
                 var rayOrigin = firstRayOrigin + new Vector3(xOffset, 0.0f, 0.0f);
-                var raycastHits = Physics2D.RaycastAll(rayOrigin, rayDirection, velocity.y, WallMask);
+                var raycastHits = Physics2D.RaycastAll(rayOrigin, rayDirection, _velocity.y, WallMask);
 
-                Debug.DrawRay(rayOrigin, rayDirection * velocity.y, Color.blue);
+                Debug.DrawRay(rayOrigin, rayDirection * _velocity.y, Color.blue);
 
                 foreach (var hit in raycastHits)
                 {
@@ -209,16 +227,16 @@ public class PhysicsController2D : MonoBehaviour
 
                     var newVelocity = hit.point.y - rayOrigin.y;
 
-                    if (Math.Abs(newVelocity) < Math.Abs(velocity.y))
+                    if (Math.Abs(newVelocity) < Math.Abs(_velocity.y))
                     {
                         var otherPhysics = hit.collider.gameObject.GetComponent<PhysicsController2D>();
                         var myCollision = (new Collision
                         {
-                            Side = velocity.y > 0 ? CollisionSide.Top : CollisionSide.Bottom,
+                            Side = _velocity.y > 0 ? CollisionSide.Top : CollisionSide.Bottom,
                             Object = hit.collider.gameObject
                         });
 
-                        velocity.y = newVelocity;
+                        _velocity.y = newVelocity;
                         Collisions.TouchedObjects.Add(myCollision);
 
                         if (otherPhysics)
@@ -238,18 +256,18 @@ public class PhysicsController2D : MonoBehaviour
 
         // Check for horizontal collisions
 
-        if (Math.Abs(velocity.x) > .0001f)
+        if (Math.Abs(_velocity.x) > .0001f)
         {
-            var firstRayOrigin = transform.position + new Vector3(Math.Sign(velocity.x) * Width / 2, -Height / 2, 0.0f);
-            var rayDirection = Vector2.right * Math.Sign(velocity.x);
+            var firstRayOrigin = transform.position + new Vector3(Math.Sign(_velocity.x) * Width / 2, -Height / 2, 0.0f);
+            var rayDirection = Vector2.right * Math.Sign(_velocity.x);
 
             for (var i = 0; i < numRays; i++)
             {
                 var yOffset = i * (Height - skinWidth * 2) / (numRays - 1) + skinWidth;
                 var rayOrigin = firstRayOrigin + new Vector3(0.0f, yOffset, 0.0f);
-                var raycastHits = Physics2D.RaycastAll(rayOrigin, rayDirection, Math.Abs(velocity.x), WallMask);
+                var raycastHits = Physics2D.RaycastAll(rayOrigin, rayDirection, Math.Abs(_velocity.x), WallMask);
 
-                Debug.DrawRay(rayOrigin, rayDirection * Math.Abs(velocity.x) * 20, Color.blue);
+                Debug.DrawRay(rayOrigin, rayDirection * Math.Abs(_velocity.x) * 20, Color.blue);
 
                 foreach (var hit in raycastHits)
                 {
@@ -257,11 +275,13 @@ public class PhysicsController2D : MonoBehaviour
 
                     var newVelocity = hit.point.x - rayOrigin.x;
 
-                    if (Math.Abs(newVelocity) < Math.Abs(velocity.x))
+                    if (Math.Abs(newVelocity) < Math.Abs(_velocity.x))
                     {
-                        velocity.x = newVelocity;
+                        print(hit.collider.gameObject.name);
+
+                        _velocity.x = newVelocity;
                         Collisions.TouchedObjects.Add(new Collision {
-                            Side = velocity.x > 0 ? CollisionSide.Right : CollisionSide.Left,
+                            Side = _velocity.x > 0 ? CollisionSide.Right : CollisionSide.Left,
                             Object = hit.collider.gameObject 
                         });
 
@@ -273,5 +293,7 @@ public class PhysicsController2D : MonoBehaviour
                 }
             }
         }
+
+        Collisions.Resolved = true;
     }
 }
