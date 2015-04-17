@@ -28,10 +28,9 @@ public class CollisionModel
 {
     public bool TouchingTop;
 
-    public bool TouchingBottom
-    {
-        get { return TouchedObjects.Any(c => c.Side == CollisionSide.Bottom); }
-    }
+    public bool TouchingBottom;
+
+    public bool JustTouchingBottom;
 
     public bool TouchingRight;
 
@@ -55,6 +54,7 @@ public class CollisionModel
         TouchingTop = false;
         TouchingRight = false;
         TouchingLeft = false;
+        TouchingBottom = false;
 
         Resolved = false;
 
@@ -220,6 +220,16 @@ public class PhysicsController2D : MonoBehaviour
                                 Side = myCollision.Side == CollisionSide.Top ? CollisionSide.Bottom : CollisionSide.Top,
                                 Object = gameObject
                             });
+                        }
+
+                        if (velocity.y > 0)
+                        {
+                            print("Top");
+                            Collisions.TouchingTop = true;
+                        }
+                        else
+                        {
+                            Collisions.TouchingBottom = true;
                         }
 
                         break;
