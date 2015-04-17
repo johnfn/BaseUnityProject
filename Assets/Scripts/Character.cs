@@ -63,5 +63,10 @@ public class Character : MonoBehaviour {
 	            t.Object.GetComponent<PhysicsController2D>().AddHorizontalForce(_physics.Velocity.x * 0.95f);
 	        }
 	    }
+
+	    if (collision.JustTouchingBottom)
+	    {
+	        print("Ding");
+	    }
 	}
 }
