@@ -28,9 +28,17 @@ public class CollisionModel
 {
     public bool TouchingTop;
 
+    public bool JustTouchingTop
+    {
+        get { return TouchingTop && !OldModel.TouchingTop; }
+    }
+
     public bool TouchingBottom;
 
-    public bool JustTouchingBottom;
+    public bool JustTouchingBottom
+    {
+        get { return TouchingBottom && !OldModel.TouchingBottom; }
+    }
 
     public bool TouchingRight;
 
@@ -38,27 +46,39 @@ public class CollisionModel
 
     public bool Resolved;
 
-    public List<Collision> TouchedObjects;
+    public List<Collision> TouchedObjects = new List<Collision>();
 
-    public List<Collision> PreviouslyTouchedObjects;
+    public List<Collision> PreviouslyTouchedObjects
+    {
+        get { return OldModel.TouchedObjects; }
+    }
+
+    public CollisionModel OldModel;
 
     public CollisionModel()
     {
-        PreviouslyTouchedObjects = new List<Collision>();
-
-        Reset();
+        // Note: Calling Reset() in here will cause infinite recursion. 
     }
 
     public void Reset()
     {
+        OldModel = new CollisionModel
+        {
+            TouchingTop = TouchingTop,
+            TouchingBottom = TouchingBottom,
+            TouchingLeft = TouchingLeft,
+            TouchingRight = TouchingRight,
+
+            TouchedObjects = TouchedObjects
+        };
+
+        TouchingBottom = false;
         TouchingTop = false;
         TouchingRight = false;
         TouchingLeft = false;
-        TouchingBottom = false;
 
         Resolved = false;
 
-        PreviouslyTouchedObjects = TouchedObjects;
         TouchedObjects = new List<Collision>();
     }
 }
@@ -128,14 +148,10 @@ public class PhysicsController2D : MonoBehaviour
     }
 
     [UsedImplicitly]
-    void Update()
+	void Update()
     {
         Collisions.Reset();
-    }
 
-    [UsedImplicitly]
-	void LateUpdate()
-    {
         ApplyGravity(ref _velocity);
         ApplyFriction(ref _velocity);
         CapVelocity(ref _velocity);
@@ -210,7 +226,6 @@ public class PhysicsController2D : MonoBehaviour
                             Object = hit.collider.gameObject
                         });
 
-                        velocity.y = newVelocity;
                         Collisions.TouchedObjects.Add(myCollision);
 
                         if (otherPhysics)
@@ -224,13 +239,14 @@ public class PhysicsController2D : MonoBehaviour
 
                         if (velocity.y > 0)
                         {
-                            print("Top");
                             Collisions.TouchingTop = true;
                         }
                         else
                         {
                             Collisions.TouchingBottom = true;
                         }
+
+                        velocity.y = newVelocity;
 
                         break;
                     }
